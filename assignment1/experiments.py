@@ -12,7 +12,7 @@ def dict_result(data, labels):
     return cluster_dict
 
 
-def cross_corr_score(data, labels):
+def weighted_cross_corr_score(data, labels):
     datas = dict_result(data, labels)
     n = len(data[0])
 
@@ -25,8 +25,9 @@ def cross_corr_score(data, labels):
             in_cluster_cross_corr[i] = max(signal.correlate(y2, y1, mode='same') / np.sqrt(
                 signal.correlate(y1, y1, mode='same')[int(n / 2)] * signal.correlate(y2, y2, mode='same')[
                     int(n / 2)]))
-        ovr_cross_corr[label] = in_cluster_cross_corr.mean() if len(in_cluster_cross_corr) != 0 else None
-    return ovr_cross_corr.mean()
+        ovr_cross_corr[label] = in_cluster_cross_corr.mean()*len(datas[label]) if len(in_cluster_cross_corr) != 0 else None
+
+    return ovr_cross_corr.mean()/len(data)
 
 
 def dbscan(data):
@@ -42,7 +43,7 @@ def dbscan(data):
             for met in metric:
                 for p in ps:
                     db = DBSCAN(eps=e, min_samples=ms, metric=met, p=p, n_jobs=-1).fit(data)
-                    ccs = cross_corr_score(data, db.labels_)
+                    ccs = weighted_cross_corr_score(data, db.labels_)
                     if len(set(db.labels_)) > 1 and ccs > score:
                         score = ccs
                         eb, msb, metb, pb = e, ms, met, p
@@ -50,7 +51,7 @@ def dbscan(data):
     db = DBSCAN(eps=eb, min_samples=msb, metric=metb, p=pb, n_jobs=-1).fit(data)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'dbscan: eps={eb}, min_samples={msb}, metric={metb}, p={pb}, cross_corr_score={cross_corr_score(data, db.labels_)}, silhouette_score={silhouette_score(data, db.labels_)}\n')
+            f'dbscan: eps={eb}, min_samples={msb}, metric={metb}, p={pb}, weighted_cross_corr_score={weighted_cross_corr_score(data, db.labels_)}, silhouette_score={silhouette_score(data, db.labels_)}\n')
     return db
 
 
@@ -65,7 +66,7 @@ def kmeans(data):
         for mi in max_iter:
             for t in tol:
                 kmeans = KMeans(n_clusters=clust, max_iter=mi, tol=t, n_init='auto').fit(data)
-                ccs = cross_corr_score(data, kmeans.labels_)
+                ccs = weighted_cross_corr_score(data, kmeans.labels_)
                 if len(set(kmeans.labels_)) > 1 and ccs > score:
                     score = ccs
                     clustb, mib, tb = clust, mi, t
@@ -73,7 +74,7 @@ def kmeans(data):
     kmeans = KMeans(n_clusters=clustb, max_iter=mib, tol=tb, n_init='auto').fit(data)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'kmeans: n_clusters={clustb}, max_iter={mib}, tol={tb}, cross_corr_score={cross_corr_score(data, kmeans.labels_)}, silhouette_score={silhouette_score(data, kmeans.labels_)}\n')
+            f'kmeans: n_clusters={clustb}, max_iter={mib}, tol={tb}, weighted_cross_corr_score={weighted_cross_corr_score(data, kmeans.labels_)}, silhouette_score={silhouette_score(data, kmeans.labels_)}\n')
     return kmeans
 
 
@@ -86,7 +87,7 @@ def agg_n(data):
     for clust in tqdm(n_clusters):
         for li in linkage:
             agglo = AgglomerativeClustering(n_clusters=clust, linkage=li).fit(data)
-            ccs = cross_corr_score(data, agglo.labels_)
+            ccs = weighted_cross_corr_score(data, agglo.labels_)
             if len(set(agglo.labels_)) > 1 and ccs > score:
                 score = ccs
                 clustb, lib = clust, li
@@ -94,7 +95,7 @@ def agg_n(data):
     agglo = AgglomerativeClustering(n_clusters=clustb, linkage=lib).fit(data)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'agglo_n: n_clusters={clustb}, linkage={lib}, cross_corr_score={cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
+            f'agglo_n: n_clusters={clustb}, linkage={lib}, weighted_cross_corr_score={weighted_cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
     return agglo
 
 
@@ -108,7 +109,7 @@ def agg_guess(data):
         for li in linkage:
             agglo = AgglomerativeClustering(n_clusters=None, distance_threshold=thre, linkage=li).fit(data)
             print(agglo.labels_)
-            ccs = cross_corr_score(data, agglo.labels_)
+            ccs = weighted_cross_corr_score(data, agglo.labels_)
             if len(set(agglo.labels_)) > 1 and ccs > score:
                 score = ccs
                 threb, lib = thre, li
@@ -116,7 +117,7 @@ def agg_guess(data):
     agglo = AgglomerativeClustering(n_clusters=None, thre=threb, linkage=lib).fit(data)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'agglo_guess: distance_threshold={threb}, linkage={lib}, cross_corr_score={cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
+            f'agglo_guess: distance_threshold={threb}, linkage={lib}, weighted_cross_corr_score={weighted_cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
     return agglo
 
 
@@ -139,7 +140,7 @@ def gausian_mm(data):
                             gmm = GaussianMixture(n_components=n_comp, covariance_type=cov, tol=t, reg_covar=reg,
                                                   max_iter=mi, init_params=ini).fit(data)
                             labels = gmm.predict(data)
-                            ccs = cross_corr_score(data, labels)
+                            ccs = weighted_cross_corr_score(data, labels)
                             if len(set(labels)) > 1 and ccs > score:
                                 score = ccs
                                 n_compb, covb, tb, regb, mib, inib = n_comp, cov, t, reg, mi, ini
@@ -149,5 +150,5 @@ def gausian_mm(data):
     labels = gmm.predict(data)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'gausian_mm: n_components={n_compb}, covariance_type={covb}, tol={tb}, reg_covar={regb}, max_iter={mib}, init_params={inib}, cross_corr_score={cross_corr_score(data, labels)}, silhouette_score={silhouette_score(data, labels)}\n')
+            f'gausian_mm: n_components={n_compb}, covariance_type={covb}, tol={tb}, reg_covar={regb}, max_iter={mib}, init_params={inib}, weighted_cross_corr_score={weighted_cross_corr_score(data, labels)}, silhouette_score={silhouette_score(data, labels)}\n')
     return gmm

@@ -1,6 +1,7 @@
 import argparse
 import load_data, experiments
 import os
+from sklearn.cluster import DBSCAN
 
 
 def arguments():
@@ -47,13 +48,13 @@ def main():
     args = arguments()
     data, file_names = load_data.load_images(args.file_path)
 
-    experiments.kmeans(data)
-    db = experiments.dbscan(data)
-    experiments.agg_n(data)
+    km = DBSCAN(eps=1.5, min_samples=2, metric='euclidean', p=1).fit(data)
+    #db = experiments.dbscan(data)
+    #experiments.agg_n(data)
 
-    result = assign_files_to_clusters(file_names, db.labels_)
-    text_file_output(result, db.labels_)
-    html_file_output(result, db.labels_)
+    result = assign_files_to_clusters(file_names, km.labels_)
+    text_file_output(result, km.labels_)
+    html_file_output(result, km.labels_)
 
 
 if __name__ == '__main__':

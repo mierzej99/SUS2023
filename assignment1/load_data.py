@@ -10,7 +10,12 @@ def load_images(file_with_paths):
     for line in lines:
         line = line.strip()
         img = skimage.io.imread(line)
-        img = skimage.transform.resize(img, (15, 15, 3))
+        if img.shape[2] == 3:
+            img = skimage.color.rgb2gray(img)
+        else:
+            img = skimage.color.rgba2rgb(img)
+            img = skimage.color.rgb2gray(img)
+        img = skimage.transform.resize(img, (50, 50))
         data.append(img.flatten())
         file_names.append(line)
     data = np.asarray(data)

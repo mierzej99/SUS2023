@@ -2,8 +2,9 @@ from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score
 from tqdm import tqdm
-from scipy import signal
 import numpy as np
+from multiprocessing import Pool, cpu_count
+
 
 def dict_result(data, labels):
     cluster_dict = {k: [] for k in set(labels)}
@@ -22,41 +23,63 @@ def weighted_cross_corr_score(data, labels):
         for i, x in enumerate(datas[label][:-1]):
             y1 = datas[label][i]
             y2 = datas[label][i + 1]
-            in_cluster_cross_corr[i] = max(signal.correlate(y2, y1, mode='same') / np.sqrt(
-                signal.correlate(y1, y1, mode='same')[int(n / 2)] * signal.correlate(y2, y2, mode='same')[
+            in_cluster_cross_corr[i] = max(np.correlate(y2, y1, mode='same') / np.sqrt(
+                np.correlate(y1, y1, mode='same')[int(n / 2)] * np.correlate(y2, y2, mode='same')[
                     int(n / 2)]))
-        ovr_cross_corr[label] = in_cluster_cross_corr.mean()*len(datas[label]) if len(in_cluster_cross_corr) != 0 else None
+        ovr_cross_corr[label] = in_cluster_cross_corr.mean() * len(datas[label]) if len(
+            in_cluster_cross_corr) != 0 else None
 
-    return ovr_cross_corr.mean()/len(data)
+    return ovr_cross_corr.mean() / len(data)
+
+
+def cross_corr_metric(y1, y2):
+    n = len(y1)
+    return 1 - max(np.correlate(y2, y1, mode='same') / np.sqrt(
+        np.correlate(y1, y1, mode='same')[int(n / 2)] * np.correlate(y2, y2, mode='same')[
+            int(n / 2)]))
+
+def compute_row(i, data):
+    cross_corr_matrix_row = np.zeros(len(data))
+    x = data[i]
+    for j, y in enumerate(data):
+        cross_corr_matrix_row[j] = cross_corr_metric(x, y)
+    return cross_corr_matrix_row
+
+def cross_corr_matrix(data):
+    cross_corr_matrix_r = np.empty((len(data),len(data)))
+    with Pool(cpu_count()) as p:
+        results = [p.apply_async(compute_row, args=(i, data)) for i in range(len(data))]
+        for i, result in enumerate(results):
+            row = result.get()
+            cross_corr_matrix_r[i] = row
+    return cross_corr_matrix_r
 
 
 def dbscan(data):
-    eps = [0.5 * x for x in range(1, 11)]
-    min_smaple = [x for x in range(2, 6)]
-    metric = ['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan']
-    ps = [x for x in range(1, 6)]
+    distance_matrix = cross_corr_matrix(data)
+
+    eps = [0.001 * x for x in range(1, 300)]
+    min_smaple = [x for x in range(2, 20)]
 
     score = -1
 
     for e in tqdm(eps):
         for ms in min_smaple:
-            for met in metric:
-                for p in ps:
-                    db = DBSCAN(eps=e, min_samples=ms, metric=met, p=p, n_jobs=-1).fit(data)
-                    ccs = weighted_cross_corr_score(data, db.labels_)
-                    if len(set(db.labels_)) > 1 and ccs > score:
-                        score = ccs
-                        eb, msb, metb, pb = e, ms, met, p
+            db = DBSCAN(eps=e, min_samples=ms, metric='precomputed', n_jobs=-1).fit(distance_matrix)
+            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 else -1
+            if ccs > score:
+                score = ccs
+                eb, msb = e, ms
 
-    db = DBSCAN(eps=eb, min_samples=msb, metric=metb, p=pb, n_jobs=-1).fit(data)
+    db = DBSCAN(eps=eb, min_samples=msb, metric='precomputed', n_jobs=-1).fit(distance_matrix)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'dbscan: eps={eb}, min_samples={msb}, metric={metb}, p={pb}, weighted_cross_corr_score={weighted_cross_corr_score(data, db.labels_)}, silhouette_score={silhouette_score(data, db.labels_)}\n')
+            f'dbscan: eps={eb}, min_samples={msb}, metric=precomputed, weighted_cross_corr_score={weighted_cross_corr_score(data, db.labels_)}, silhouette_score={silhouette_score(data, db.labels_)}\n')
     return db
 
 
 def kmeans(data):
-    n_clusters = [x for x in range(2, 60)]
+    n_clusters = [x for x in range(50, 65)]
     max_iter = [100 * x for x in range(1, 5)]
     tol = [10 ** x for x in range(-5, 1)]
 
@@ -79,7 +102,7 @@ def kmeans(data):
 
 
 def agg_n(data):
-    n_clusters = [x for x in range(2, 60)]
+    n_clusters = [x for x in range(50, 65)]
     linkage = ['ward', 'complete', 'average', 'single']
 
     score = -1
@@ -122,7 +145,7 @@ def agg_guess(data):
 
 
 def gausian_mm(data):
-    n_components = [x for x in range(2, 60, 3)]
+    n_components = [x for x in range(50, 65)]
     covariance_type = ['full', 'tied', 'diag', 'spherical']
     tol = [10 ** x for x in range(-5, -3)]
     reg_covar = [10 ** x for x in range(-7, -5)]

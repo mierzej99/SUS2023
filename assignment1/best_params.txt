@@ -1,3 +1,15 @@
 kmeans: n_clusters=58, max_iter=200, tol=1, cross_corr_score=0.932593816921595, silhouette_score=0.21892656395448218
 dbscan: eps=1.5, min_samples=2, metric=euclidean, p=1, cross_corr_score=0.9905493454868065, silhouette_score=-0.49877786001385027
 agglo_n: n_clusters=59, linkage=ward, cross_corr_score=0.9299436459940327, silhouette_score=0.22077055829083078
+kmeans: n_clusters=50, max_iter=200, tol=0.001, weighted_cross_corr_score=0.01874760442620832, silhouette_score=0.2403221789667647
+dbscan: eps=5.0, min_samples=2, metric=cityblock, p=1, weighted_cross_corr_score=0.38022376152982557, silhouette_score=0.02515818330519555
+agglo_n: n_clusters=50, linkage=ward, weighted_cross_corr_score=0.01875683916454082, silhouette_score=0.27669738078677786
+kmeans: n_clusters=50, max_iter=100, tol=0.01, weighted_cross_corr_score=nan, silhouette_score=0.23322837893173703
+dbscan: eps=2.0, min_samples=4, metric=euclidean, p=1, weighted_cross_corr_score=0.3813653181408513, silhouette_score=-0.04470207846452874
+agglo_n: n_clusters=50, linkage=ward, weighted_cross_corr_score=0.018720694491310145, silhouette_score=0.266563899536854
+dbscan: eps=0.15, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.38632774218282545, silhouette_score=0.09137964251944468
+dbscan: eps=0.05, min_samples=5, metric=precomputed, weighted_cross_corr_score=0.039698643809483986, silhouette_score=0.32209764106529754
+dbscan: eps=0.047, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.033901527774259754, silhouette_score=0.3298581680120658
+dbscan: eps=0.052000000000000005, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.036538625968062226, silhouette_score=0.3306644488234174
+dbscan: eps=0.051000000000000004, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.03518101365039533, silhouette_score=0.33572628343123995
+dbscan: eps=0.044, min_samples=3, metric=precomputed, weighted_cross_corr_score=0.03816833261639855, silhouette_score=0.31120419071447314

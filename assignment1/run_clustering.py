@@ -1,6 +1,9 @@
 import argparse
+import time
+from tqdm import tqdm
 import load_data, experiments
 import os
+import numpy as np
 from sklearn.cluster import DBSCAN
 
 
@@ -45,16 +48,26 @@ def html_file_output(result, labels):
 
 
 def main():
+    t = time.time()
     args = arguments()
     data, file_names = load_data.load_images(args.file_path)
 
-    km = DBSCAN(eps=1.5, min_samples=2, metric='euclidean', p=1).fit(data)
-    #db = experiments.dbscan(data)
-    #experiments.agg_n(data)
+    # shrinking data
+    rng = np.random.default_rng(1)
+    indexes = rng.choice(a=range(7601), size=500, replace=False)
+    data = data[indexes]
+    file_names = [file_names[i] for i in indexes]
 
-    result = assign_files_to_clusters(file_names, km.labels_)
-    text_file_output(result, km.labels_)
-    html_file_output(result, km.labels_)
+
+    db = experiments.dbscan(data)
+    # experiments.agg_n(data)
+    # experiments.gausian_mm(data)
+
+    result = assign_files_to_clusters(file_names, db.labels_)
+    text_file_output(result, db.labels_)
+    html_file_output(result, db.labels_)
+
+    print((time.time() - t)/60)
 
 
 if __name__ == '__main__':

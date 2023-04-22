@@ -53,15 +53,17 @@ def main():
     data, file_names = load_data.load_images(args.file_path)
 
     # shrinking data
-    rng = np.random.default_rng(1)
+    """rng = np.random.default_rng(1)
     indexes = rng.choice(a=range(7601), size=500, replace=False)
     data = data[indexes]
-    file_names = [file_names[i] for i in indexes]
+    file_names = [file_names[i] for i in indexes]"""
 
 
-    db = experiments.dbscan(data)
+    #db = experiments.dbscan(data)
     # experiments.agg_n(data)
     # experiments.gausian_mm(data)
+    distance_matrix = experiments.cross_corr_matrix(data)
+    db = DBSCAN(eps=0.044, min_samples=3, metric='precomputed').fit(distance_matrix)
 
     result = assign_files_to_clusters(file_names, db.labels_)
     text_file_output(result, db.labels_)

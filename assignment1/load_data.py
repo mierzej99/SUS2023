@@ -15,7 +15,7 @@ def load_images(file_with_paths):
         else:
             img = skimage.color.rgba2rgb(img)
             img = skimage.color.rgb2gray(img)
-        img = skimage.transform.resize(img, (10, 10))
+        img = skimage.transform.resize(img, (15, 14))
         data.append(img.flatten())
         file_names.append(line)
     data = np.asarray(data)

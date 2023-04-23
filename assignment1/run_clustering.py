@@ -4,7 +4,8 @@ from tqdm import tqdm
 import load_data, experiments
 import os
 import numpy as np
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, AgglomerativeClustering, SpectralClustering
+from sklearn.metrics import silhouette_score
 
 
 def arguments():
@@ -29,8 +30,8 @@ def text_file_output(result, labels):
             f.write('\n')
 
 
-def html_file_output(result, labels):
-    with open('result.html', 'w') as f:
+def html_file_output(result, labels, file_name):
+    with open(file_name, 'w') as f:
         f.write('''<html>
         <head>
         <title>results</title>
@@ -53,21 +54,22 @@ def main():
     data, file_names = load_data.load_images(args.file_path)
 
     # shrinking data
-    """rng = np.random.default_rng(1)
-    indexes = rng.choice(a=range(7601), size=500, replace=False)
+    rng = np.random.default_rng(4)
+    indexes = rng.choice(a=range(7601), size=5000, replace=False)
     data = data[indexes]
-    file_names = [file_names[i] for i in indexes]"""
+    file_names = [file_names[i] for i in indexes]
 
-
-    #db = experiments.dbscan(data)
-    # experiments.agg_n(data)
-    # experiments.gausian_mm(data)
     distance_matrix = experiments.cross_corr_matrix(data)
-    db = DBSCAN(eps=0.044, min_samples=3, metric='precomputed').fit(distance_matrix)
+    print(f'distance matrix calulated time in min:{(time.time() - t) / 60}')
 
-    result = assign_files_to_clusters(file_names, db.labels_)
-    text_file_output(result, db.labels_)
-    html_file_output(result, db.labels_)
+    db_pre = experiments.dbscan(data, distance_matrix)
+    
+    print(f'db_pre score: {silhouette_score(data, db_pre.labels_)}')
+
+    result_db_pre = assign_files_to_clusters(file_names, db_pre.labels_)
+
+    #text_file_output(result, db.labels_)
+    html_file_output(result_db_pre, db_pre.labels_, file_name='result_db_pre.html')
 
     print((time.time() - t)/60)
 

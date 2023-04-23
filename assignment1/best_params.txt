@@ -13,3 +13,19 @@ dbscan: eps=0.047, min_samples=4, metric=precomputed, weighted_cross_corr_score=
 dbscan: eps=0.052000000000000005, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.036538625968062226, silhouette_score=0.3306644488234174
 dbscan: eps=0.051000000000000004, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.03518101365039533, silhouette_score=0.33572628343123995
 dbscan: eps=0.044, min_samples=3, metric=precomputed, weighted_cross_corr_score=0.03816833261639855, silhouette_score=0.31120419071447314
+dbscan: eps=0.078, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.05347717344682394, silhouette_score=0.2696725529114494
+dbscan: eps=0.056, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.05709994429159167, silhouette_score=0.2915208594961554
+dbscan: eps=0.152, min_samples=7, metric=precomputed, weighted_cross_corr_score=0.39646954657765293, silhouette_score=0.08350616794049479
+dbscan: eps=0.079, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.053422240578776786, silhouette_score=0.26981871498087295
+dbscan: eps=0.079, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.05344086797440351, silhouette_score=0.2692429214527627
+dbscan: eps=0.052000000000000005, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.036538625968062226, silhouette_score=0.3306644488234174
+kmeans: n_clusters=50, max_iter=300, tol=0.01, weighted_cross_corr_score=nan, silhouette_score=0.21690468283917272
+kmeans: n_clusters=50, max_iter=200, tol=1, weighted_cross_corr_score=0.018723574225480013, silhouette_score=0.22641055639947813
+//////////////////////////////////////////////
+
+dbscan: eps=0.039, min_samples=7, metric=precomputed, weighted_cross_corr_score=0.017315111363580177, silhouette_score=0.31551273078245007
+kmeans: n_clusters=55, max_iter=400, tol=0.0001, weighted_cross_corr_score=0.017078391631121577, silhouette_score=0.20106829347350097
+agglo_n: n_clusters=62, linkage=complete, metric=precomputed, weighted_cross_corr_score=nan, silhouette_score=0.2724055586773278
+agglo_guess: distance_threshold=0.125, linkage=average, weighted_cross_corr_score=nan, silhouette_score=0.3183379777460124
+dbscan: eps=2.5, min_samples=5, metric=euclidean, p=1, weighted_cross_corr_score=0.018605351377118388, silhouette_score=0.3289012706271091
+dbscan: eps=0.033, min_samples=5, metric=precomputed, weighted_cross_corr_score=0.017764463795589647, silhouette_score=0.33553947694569214

@@ -1,5 +1,4 @@
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
-from sklearn.mixture import GaussianMixture
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, SpectralClustering
 from sklearn.metrics import silhouette_score
 from tqdm import tqdm
 import numpy as np
@@ -32,11 +31,14 @@ def weighted_cross_corr_score(data, labels):
     return ovr_cross_corr.mean() / len(data)
 
 
-def cross_corr_metric(y1, y2):
-    n = len(y1)
-    return 1 - max(np.correlate(y2, y1, mode='same') / np.sqrt(
-        np.correlate(y1, y1, mode='same')[int(n / 2)] * np.correlate(y2, y2, mode='same')[
-            int(n / 2)]))
+def cross_corr_metric(a, b):
+    norm_a = np.linalg.norm(a)
+    a = a / norm_a
+    norm_b = np.linalg.norm(b)
+    b = b / norm_b
+    c = np.correlate(a, b, mode='same')
+    return max(0, 1 - max(c))
+
 
 def compute_row(i, data):
     cross_corr_matrix_row = np.zeros(len(data))
@@ -45,8 +47,9 @@ def compute_row(i, data):
         cross_corr_matrix_row[j] = cross_corr_metric(x, y)
     return cross_corr_matrix_row
 
+
 def cross_corr_matrix(data):
-    cross_corr_matrix_r = np.empty((len(data),len(data)))
+    cross_corr_matrix_r = np.empty((len(data), len(data)))
     with Pool(cpu_count()) as p:
         results = [p.apply_async(compute_row, args=(i, data)) for i in range(len(data))]
         for i, result in enumerate(results):
@@ -55,11 +58,34 @@ def cross_corr_matrix(data):
     return cross_corr_matrix_r
 
 
-def dbscan(data):
-    distance_matrix = cross_corr_matrix(data)
+def dbscan_classic(data):
+    eps = [0.5 * x for x in range(1, 11)]
+    min_smaple = [x for x in range(2, 7)]
+    metric = ['cityblock', 'cosine', 'euclidean', 'l1', 'l2', 'manhattan']
+    ps = [x for x in range(1, 6)]
 
-    eps = [0.001 * x for x in range(1, 300)]
-    min_smaple = [x for x in range(2, 20)]
+    score = -1
+
+    for e in tqdm(eps):
+        for ms in min_smaple:
+            for met in metric:
+                for p in ps:
+                    db = DBSCAN(eps=e, min_samples=ms, metric=met, p=p, n_jobs=-1).fit(data)
+                    ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 else -1
+                    if ccs > score:
+                        score = ccs
+                        eb, msb, metb, pb = e, ms, met, p
+
+    db = DBSCAN(eps=eb, min_samples=msb, metric=metb, p=pb, n_jobs=-1).fit(data)
+    with open('best_params.txt', 'a') as f:
+        f.write(
+            f'dbscan: eps={eb}, min_samples={msb}, metric={metb}, p={pb}, weighted_cross_corr_score={weighted_cross_corr_score(data, db.labels_)}, silhouette_score={silhouette_score(data, db.labels_)}\n')
+    return db
+
+
+def dbscan(data, distance_matrix):
+    eps = [0.001 * x for x in range(30, 100)]
+    min_smaple = [x for x in range(2, 9)]
 
     score = -1
 
@@ -89,8 +115,8 @@ def kmeans(data):
         for mi in max_iter:
             for t in tol:
                 kmeans = KMeans(n_clusters=clust, max_iter=mi, tol=t, n_init='auto').fit(data)
-                ccs = weighted_cross_corr_score(data, kmeans.labels_)
-                if len(set(kmeans.labels_)) > 1 and ccs > score:
+                ccs = silhouette_score(data, kmeans.labels_) if len(set(kmeans.labels_)) > 1 else -1
+                if ccs > score:
                     score = ccs
                     clustb, mib, tb = clust, mi, t
 
@@ -101,77 +127,78 @@ def kmeans(data):
     return kmeans
 
 
-def agg_n(data):
+def agg_n(data, distance_matrix):
     n_clusters = [x for x in range(50, 65)]
-    linkage = ['ward', 'complete', 'average', 'single']
+    linkage = ['complete', 'average', 'single']
 
     score = -1
 
     for clust in tqdm(n_clusters):
         for li in linkage:
-            agglo = AgglomerativeClustering(n_clusters=clust, linkage=li).fit(data)
-            ccs = weighted_cross_corr_score(data, agglo.labels_)
-            if len(set(agglo.labels_)) > 1 and ccs > score:
+            agglo = AgglomerativeClustering(n_clusters=clust, metric='precomputed', linkage=li).fit(distance_matrix)
+            ccs = silhouette_score(data, agglo.labels_) if len(set(agglo.labels_)) > 1 else -1
+            if ccs > score:
                 score = ccs
                 clustb, lib = clust, li
 
-    agglo = AgglomerativeClustering(n_clusters=clustb, linkage=lib).fit(data)
+    agglo = AgglomerativeClustering(n_clusters=clustb, linkage=lib, metric='precomputed').fit(distance_matrix)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'agglo_n: n_clusters={clustb}, linkage={lib}, weighted_cross_corr_score={weighted_cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
+            f'agglo_n: n_clusters={clustb}, linkage={lib}, metric=precomputed, weighted_cross_corr_score={weighted_cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
     return agglo
 
 
-def agg_guess(data):
-    linkage = ['ward']  # ['ward', 'complete', 'average', 'single']
-    distance_threshold = [10 ** x for x in range(-3, 3)]
+def agg_guess(data, distance_matrix):
+    linkage = ['complete', 'average', 'single']
+    distance_threshold = [0.001 * x for x in range(1, 250)]
 
     score = -1
 
     for thre in tqdm(distance_threshold):
         for li in linkage:
-            agglo = AgglomerativeClustering(n_clusters=None, distance_threshold=thre, linkage=li).fit(data)
-            print(agglo.labels_)
-            ccs = weighted_cross_corr_score(data, agglo.labels_)
-            if len(set(agglo.labels_)) > 1 and ccs > score:
+            agglo = AgglomerativeClustering(n_clusters=None, distance_threshold=thre, linkage=li,
+                                            metric='precomputed').fit(distance_matrix)
+            ccs = silhouette_score(data, agglo.labels_) if len(set(agglo.labels_)) > 1 and len(
+                set(agglo.labels_)) < len(data) - 1 else -1
+            if ccs > score:
                 score = ccs
                 threb, lib = thre, li
 
-    agglo = AgglomerativeClustering(n_clusters=None, thre=threb, linkage=lib).fit(data)
+    agglo = AgglomerativeClustering(n_clusters=None, distance_threshold=threb, linkage=lib, metric='precomputed').fit(
+        distance_matrix)
     with open('best_params.txt', 'a') as f:
         f.write(
             f'agglo_guess: distance_threshold={threb}, linkage={lib}, weighted_cross_corr_score={weighted_cross_corr_score(data, agglo.labels_)}, silhouette_score={silhouette_score(data, agglo.labels_)}\n')
     return agglo
 
 
-def gausian_mm(data):
-    n_components = [x for x in range(50, 65)]
-    covariance_type = ['full', 'tied', 'diag', 'spherical']
-    tol = [10 ** x for x in range(-5, -3)]
-    reg_covar = [10 ** x for x in range(-7, -5)]
-    max_iter = [100 * x for x in range(1, 3)]
-    init_params = ['kmeans', 'k-means++', 'random', 'random_from_data']
+def sc(data, distance_matrix):
+    affinity = ['precomputed_nearest_neighbors', 'precomputed']
+    n_clusters = [x for x in range(50, 66)]
+    assign_labels = ['kmeans', 'discretize', 'cluster_qr']
+    degree = list(range(1, 5))
+    n_neighbors = list(range(3, 15))
 
     score = -1
 
-    for n_comp in tqdm(n_components):
-        for cov in covariance_type[:1]:
-            for t in tol[:1]:
-                for reg in reg_covar[:1]:
-                    for mi in max_iter[:1]:
-                        for ini in init_params[:1]:
-                            gmm = GaussianMixture(n_components=n_comp, covariance_type=cov, tol=t, reg_covar=reg,
-                                                  max_iter=mi, init_params=ini).fit(data)
-                            labels = gmm.predict(data)
-                            ccs = weighted_cross_corr_score(data, labels)
-                            if len(set(labels)) > 1 and ccs > score:
-                                score = ccs
-                                n_compb, covb, tb, regb, mib, inib = n_comp, cov, t, reg, mi, ini
+    for aff in tqdm(affinity):
+        for clust in n_clusters:
+            for al in assign_labels:
+                for de in degree:
+                    for nn in n_neighbors:
+                        spec = SpectralClustering(n_clusters=clust, affinity=aff, assign_labels=al, degree=de,
+                                                  n_jobs=-1, n_neighbors=nn).fit(distance_matrix)
+                        ccs = silhouette_score(data, spec.labels_) if len(set(spec.labels_)) > 1 else -1
+                        if ccs > score:
+                            score = ccs
+                            affb, clustb, alb, deb, nnb = aff, clust, al, de, nn
+        distance_matrix = -(distance_matrix - 1)
 
-    gmm = GaussianMixture(n_components=n_compb, covariance_type=covb, tol=tb, reg_covar=regb, max_iter=mib,
-                          init_params=inib).fit(data)
-    labels = gmm.predict(data)
+    if affb == 'precomputed_nearest_neighbors':
+        distance_matrix = -(distance_matrix - 1)
+    spec = SpectralClustering(n_clusters=clustb, affinity=affb, assign_labels=alb, degree=deb, n_jobs=-1,
+                              n_neighbors=nnb).fit(distance_matrix)
     with open('best_params.txt', 'a') as f:
         f.write(
-            f'gausian_mm: n_components={n_compb}, covariance_type={covb}, tol={tb}, reg_covar={regb}, max_iter={mib}, init_params={inib}, weighted_cross_corr_score={weighted_cross_corr_score(data, labels)}, silhouette_score={silhouette_score(data, labels)}\n')
-    return gmm
+            f'spectral: n_clusters={clustb}, metric={affb}, assign_labels={alb}, degree={deb}, n_neighbors={nnb}, weighted_cross_corr_score={weighted_cross_corr_score(data, spec.labels_)}, silhouette_score={silhouette_score(data, spec.labels_)}\n')
+    return spec

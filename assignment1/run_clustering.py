@@ -32,9 +32,9 @@ def text_file_output(result, labels):
 
 def html_file_output(result, labels, file_name):
     with open(file_name, 'w') as f:
-        f.write('''<html>
+        f.write(f'''<html>
         <head>
-        <title>results</title>
+        <title>{file_name}</title>
         </head> 
         <body>
         <hr>
@@ -54,8 +54,8 @@ def main():
     data, file_names = load_data.load_images(args.file_path)
 
     # shrinking data
-    rng = np.random.default_rng(4)
-    indexes = rng.choice(a=range(7601), size=5000, replace=False)
+    rng = np.random.default_rng(11)
+    indexes = rng.choice(a=range(7601), size=600, replace=False)
     data = data[indexes]
     file_names = [file_names[i] for i in indexes]
 
@@ -69,7 +69,7 @@ def main():
     result_db_pre = assign_files_to_clusters(file_names, db_pre.labels_)
 
     #text_file_output(result, db.labels_)
-    html_file_output(result_db_pre, db_pre.labels_, file_name='result_db_pre.html')
+    html_file_output(result_db_pre, db_pre.labels_, 'result.html')
 
     print((time.time() - t)/60)
 

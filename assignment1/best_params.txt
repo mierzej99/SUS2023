@@ -29,3 +29,14 @@ agglo_n: n_clusters=62, linkage=complete, metric=precomputed, weighted_cross_cor
 agglo_guess: distance_threshold=0.125, linkage=average, weighted_cross_corr_score=nan, silhouette_score=0.3183379777460124
 dbscan: eps=2.5, min_samples=5, metric=euclidean, p=1, weighted_cross_corr_score=0.018605351377118388, silhouette_score=0.3289012706271091
 dbscan: eps=0.033, min_samples=5, metric=precomputed, weighted_cross_corr_score=0.017764463795589647, silhouette_score=0.33553947694569214
+dbscan: eps=0.042, min_samples=6, metric=precomputed, weighted_cross_corr_score=0.020813978576945242, silhouette_score=0.3196631065576373
+dbscan: eps=0.047, min_samples=3, metric=precomputed, weighted_cross_corr_score=0.030707343728596924, silhouette_score=0.33370864905123593
+dbscan: eps=0.05, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.03511985961787454, silhouette_score=0.32818421132798836
+dbscan: eps=0.058, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.05709720043480559, silhouette_score=0.32290539309096716
+dbscan: eps=0.064, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.06471748014340968, silhouette_score=0.30596806478606864
+dbscan: eps=0.064, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.06471748014340968, silhouette_score=0.30596806478606864
+dbscan: eps=0.064, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.06471748014340968, silhouette_score=0.30596806478606864
+dbscan: eps=0.034, min_samples=3, metric=precomputed, weighted_cross_corr_score=0.012064069395502865, silhouette_score=0.33377751489988206
+dbscan: eps=0.025, min_samples=3, metric=precomputed, weighted_cross_corr_score=0.01216908732254096, silhouette_score=0.28801974618194287
+dbscan: eps=0.025, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.0161606787749594, silhouette_score=0.2842642902983112
+dbscan: eps=0.043000000000000003, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.024392727919503202, silhouette_score=0.3296839558790804

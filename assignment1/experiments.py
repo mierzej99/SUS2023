@@ -83,17 +83,36 @@ def dbscan_classic(data):
     return db
 
 
-def dbscan(data, distance_matrix):
-    eps = [0.001 * x for x in range(30, 100)]
-    min_smaple = [x for x in range(2, 9)]
+def dbscan_elbow(data, distance_matrix):
+    eps = [0.001 * x for x in range(25, 75)]
+    min_smaple = [x for x in range(2, 7)]
 
     score = -1
-
+    dbs = []
     for e in tqdm(eps):
         for ms in min_smaple:
             db = DBSCAN(eps=e, min_samples=ms, metric='precomputed', n_jobs=-1).fit(distance_matrix)
-            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 else -1
-            if ccs > score:
+            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 and len(set(db.labels_)) < len(data)-1 else -1
+            dbs.append([ccs, db])
+
+    dbs = sorted(dbs, key=lambda x: x[0])
+    print([x[0] for x in dbs])
+    for i, db in enumerate(dbs[:-1]):
+        if dbs[i+1][0] - dbs[i][0] > 0.002:
+            result = dbs[i+1][1]
+    return result
+
+def dbscan(data, distance_matrix):
+    eps = [0.001 * x for x in range(25, 75)]
+    min_smaple = [x for x in range(2, 7)]
+
+    score = -1
+    dbs = []
+    for e in tqdm(eps):
+        for ms in min_smaple:
+            db = DBSCAN(eps=e, min_samples=ms, metric='precomputed', n_jobs=-1).fit(distance_matrix)
+            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 and len(set(db.labels_)) < len(data)-1 else -1
+            if ccs - score > 0.05:
                 score = ccs
                 eb, msb = e, ms
 

@@ -1,8 +1,72 @@
 from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, SpectralClustering
 from sklearn.metrics import silhouette_score
-from tqdm import tqdm
 import numpy as np
 from multiprocessing import Pool, cpu_count
+from tqdm import tqdm
+
+def cross_corr_metric(a, b):
+    """
+    Metric that I used for calculating distances between data points.
+    """
+    norm_a = np.linalg.norm(a)
+    a = a / norm_a
+    norm_b = np.linalg.norm(b)
+    b = b / norm_b
+    c = np.correlate(a, b, mode='same')
+    return max(0, 1 - max(c))
+
+
+def compute_row(i, data):
+    """
+    Help function for efficient calculations purpose.
+    """
+    cross_corr_matrix_row = np.zeros(len(data))
+    x = data[i]
+    for j, y in enumerate(data):
+        cross_corr_matrix_row[j] = cross_corr_metric(x, y)
+    return cross_corr_matrix_row
+
+
+def cross_corr_matrix(data):
+    """
+    Function for calculating distance matrix between all data points.
+    """
+    cross_corr_matrix_r = np.empty((len(data), len(data)))
+    with Pool(cpu_count()) as p:
+        results = [p.apply_async(compute_row, args=(i, data)) for i in range(len(data))]
+        for i, result in enumerate(results):
+            row = result.get()
+            cross_corr_matrix_r[i] = row
+    return cross_corr_matrix_r
+
+
+def dbscan(data, distance_matrix):
+    """
+    Experimenting with different hyperparameters for dbscan and returning best clustering.
+    """
+    eps = [0.001 * x for x in range(25, 75)]
+    min_smaple = [x for x in range(2, 7)]
+
+    score = -1
+
+    for e in tqdm(eps):
+        for ms in min_smaple:
+            db = DBSCAN(eps=e, min_samples=ms, metric='precomputed', n_jobs=-1).fit(distance_matrix)
+            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 and len(set(db.labels_)) < len(
+                data) - 1 else -1
+            if ccs - score > 0.05:
+                score = ccs
+                eb, msb = e, ms
+
+    db = DBSCAN(eps=eb, min_samples=msb, metric='precomputed', n_jobs=-1).fit(distance_matrix)
+    return db
+
+
+####################################################################################################
+"""
+I don't use below functions in my final solution so i will not comment them. I used them for experiments
+"""
+####################################################################################################
 
 
 def dict_result(data, labels):
@@ -29,33 +93,6 @@ def weighted_cross_corr_score(data, labels):
             in_cluster_cross_corr) != 0 else None
 
     return ovr_cross_corr.mean() / len(data)
-
-
-def cross_corr_metric(a, b):
-    norm_a = np.linalg.norm(a)
-    a = a / norm_a
-    norm_b = np.linalg.norm(b)
-    b = b / norm_b
-    c = np.correlate(a, b, mode='same')
-    return max(0, 1 - max(c))
-
-
-def compute_row(i, data):
-    cross_corr_matrix_row = np.zeros(len(data))
-    x = data[i]
-    for j, y in enumerate(data):
-        cross_corr_matrix_row[j] = cross_corr_metric(x, y)
-    return cross_corr_matrix_row
-
-
-def cross_corr_matrix(data):
-    cross_corr_matrix_r = np.empty((len(data), len(data)))
-    with Pool(cpu_count()) as p:
-        results = [p.apply_async(compute_row, args=(i, data)) for i in range(len(data))]
-        for i, result in enumerate(results):
-            row = result.get()
-            cross_corr_matrix_r[i] = row
-    return cross_corr_matrix_r
 
 
 def dbscan_classic(data):
@@ -92,35 +129,16 @@ def dbscan_elbow(data, distance_matrix):
     for e in tqdm(eps):
         for ms in min_smaple:
             db = DBSCAN(eps=e, min_samples=ms, metric='precomputed', n_jobs=-1).fit(distance_matrix)
-            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 and len(set(db.labels_)) < len(data)-1 else -1
+            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 and len(set(db.labels_)) < len(
+                data) - 1 else -1
             dbs.append([ccs, db])
 
     dbs = sorted(dbs, key=lambda x: x[0])
     print([x[0] for x in dbs])
     for i, db in enumerate(dbs[:-1]):
-        if dbs[i+1][0] - dbs[i][0] > 0.002:
-            result = dbs[i+1][1]
+        if dbs[i + 1][0] - dbs[i][0] > 0.002:
+            result = dbs[i + 1][1]
     return result
-
-def dbscan(data, distance_matrix):
-    eps = [0.001 * x for x in range(25, 75)]
-    min_smaple = [x for x in range(2, 7)]
-
-    score = -1
-    dbs = []
-    for e in tqdm(eps):
-        for ms in min_smaple:
-            db = DBSCAN(eps=e, min_samples=ms, metric='precomputed', n_jobs=-1).fit(distance_matrix)
-            ccs = silhouette_score(data, db.labels_) if len(set(db.labels_)) > 1 and len(set(db.labels_)) < len(data)-1 else -1
-            if ccs - score > 0.05:
-                score = ccs
-                eb, msb = e, ms
-
-    db = DBSCAN(eps=eb, min_samples=msb, metric='precomputed', n_jobs=-1).fit(distance_matrix)
-    with open('best_params.txt', 'a') as f:
-        f.write(
-            f'dbscan: eps={eb}, min_samples={msb}, metric=precomputed, weighted_cross_corr_score={weighted_cross_corr_score(data, db.labels_)}, silhouette_score={silhouette_score(data, db.labels_)}\n')
-    return db
 
 
 def kmeans(data):

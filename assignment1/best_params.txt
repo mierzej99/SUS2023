@@ -40,3 +40,5 @@ dbscan: eps=0.034, min_samples=3, metric=precomputed, weighted_cross_corr_score=
 dbscan: eps=0.025, min_samples=3, metric=precomputed, weighted_cross_corr_score=0.01216908732254096, silhouette_score=0.28801974618194287
 dbscan: eps=0.025, min_samples=4, metric=precomputed, weighted_cross_corr_score=0.0161606787749594, silhouette_score=0.2842642902983112
 dbscan: eps=0.043000000000000003, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.024392727919503202, silhouette_score=0.3296839558790804
+dbscan: eps=0.055, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.0636435228026543, silhouette_score=0.26115301033832383
+dbscan: eps=0.055, min_samples=2, metric=precomputed, weighted_cross_corr_score=0.0636435228026543, silhouette_score=0.26115301033832383

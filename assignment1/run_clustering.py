@@ -1,11 +1,11 @@
 import argparse
-import time
-from tqdm import tqdm
-import load_data, experiments
 import os
+import time
+
 import numpy as np
-from sklearn.cluster import DBSCAN, AgglomerativeClustering, SpectralClustering
-from sklearn.metrics import silhouette_score
+
+import experiments
+import load_data
 
 
 def arguments():
@@ -18,10 +18,16 @@ def arguments():
 
 
 def assign_files_to_clusters(file_names, labels):
+    """
+    assigning labels to file names
+    """
     return [[x, y] for x, y in zip(file_names, labels)]
 
 
 def text_file_output(result, labels):
+    """
+    generating text file output
+    """
     with open('result.txt', 'w') as f:
         for label in list(set(labels)):
             for x in result:
@@ -31,6 +37,9 @@ def text_file_output(result, labels):
 
 
 def html_file_output(result, labels, file_name):
+    """
+    generating html file output
+    """
     with open(file_name, 'w') as f:
         f.write(f'''<html>
         <head>
@@ -50,28 +59,31 @@ def html_file_output(result, labels, file_name):
 
 def main():
     t = time.time()
+
+    # handling input parameters
     args = arguments()
     data, file_names = load_data.load_images(args.file_path)
 
     # shrinking data
     rng = np.random.default_rng(11)
-    indexes = rng.choice(a=range(7601), size=600, replace=False)
+    indexes = rng.choice(a=range(7601), size=5000, replace=False)
     data = data[indexes]
     file_names = [file_names[i] for i in indexes]
 
+    # calculating distance matrix
     distance_matrix = experiments.cross_corr_matrix(data)
-    print(f'distance matrix calulated time in min:{(time.time() - t) / 60}')
 
-    db_pre = experiments.dbscan(data, distance_matrix)
-    
-    print(f'db_pre score: {silhouette_score(data, db_pre.labels_)}')
+    # clustering
+    db = experiments.dbscan(data, distance_matrix)
 
-    result_db_pre = assign_files_to_clusters(file_names, db_pre.labels_)
+    # assigning files to cluster for output purpose
+    result = assign_files_to_clusters(file_names, db.labels_)
 
-    #text_file_output(result, db.labels_)
-    html_file_output(result_db_pre, db_pre.labels_, 'result.html')
+    # output results to txt and html
+    text_file_output(result, db.labels_)
+    html_file_output(result, db.labels_, 'result.html')
 
-    print((time.time() - t)/60)
+    print(f'Program was running: {(time.time() - t) / 60} minutes')
 
 
 if __name__ == '__main__':

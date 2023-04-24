@@ -1,0 +1,9 @@
+python venv -m first_assignment
+
+source first_assignment/bin/activate
+
+pip install --upgrade pip
+
+pip install -r requirements.txt
+
+python run_clustering.py --file_path <file with absolute paths to images>

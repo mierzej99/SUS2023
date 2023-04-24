@@ -64,12 +64,6 @@ def main():
     args = arguments()
     data, file_names = load_data.load_images(args.file_path)
 
-    # shrinking data
-    rng = np.random.default_rng(11)
-    indexes = rng.choice(a=range(7601), size=5000, replace=False)
-    data = data[indexes]
-    file_names = [file_names[i] for i in indexes]
-
     # calculating distance matrix
     distance_matrix = experiments.cross_corr_matrix(data)
 

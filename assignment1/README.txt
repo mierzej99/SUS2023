@@ -32,6 +32,8 @@ I use silhouette_score for clustering choice I start with score = -1:
 When there is bigger difference that 0.05 in silhouette_score I make this model my model of choice.
 Intuition: I choose the first decent model, I prefer that the eps be smaller than to maximize the silhouette_score. Then the model is better at distinguishing between similar classes.
 
+EXPECED DURATION OF EXECUTION:
+I checked this program on three computers, the average execution time was 8 minutes.
 HOW TO RUN:
 python venv -m first_assignment
 

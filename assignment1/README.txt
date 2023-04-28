@@ -34,8 +34,9 @@ Intuition: I choose the first decent model, I prefer that the eps be smaller tha
 
 EXPECED DURATION OF EXECUTION:
 I checked this program on three computers, the average execution time was 8 minutes.
+
 HOW TO RUN:
-python venv -m first_assignment
+python -m venv first_assignment
 
 source first_assignment/bin/activate
 

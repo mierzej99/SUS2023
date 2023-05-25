@@ -8,8 +8,8 @@ import pandas as pd
 def list_of_paths(path):
     # creating lists of paths to photos and encodings
 
-    df = pd.read_csv(path)
-    df = df.apply(lambda x: x.replace('BigDataCup2022/S1', 'data'))
+    df = pd.read_csv(path, header=0, usecols=[1, 2])
+    df = df.applymap(lambda x: x.replace('BigDataCup2022/S1', 'data'))
     input_list = list(df['input_path'])
     enc_list = list(df['encoded_path'])
     return input_list, enc_list
@@ -35,14 +35,12 @@ def create_list_of_pairs_and_labels(input_list, enc_list, number_of_not_correct_
     return pairs, labels
 
 
-def load_images_scikit(files, n_elements=None, gray_scale=True):
+def load_images_scikit(files, gray_scale=True, size=64):
     """
     Takes file with paths to input images and load then and their names to arrays
     """
     images = []
-    if n_elements is None:
-        n_elements=len(files)
-    for inp, enc in tqdm(files[:n_elements]):
+    for inp, enc in tqdm(files):
         # loading images
         img_org = skimage.io.imread(inp)
         img_enc = skimage.io.imread(enc)
@@ -51,8 +49,8 @@ def load_images_scikit(files, n_elements=None, gray_scale=True):
             img_org = skimage.color.rgb2gray(img_org)
             img_enc = skimage.color.rgb2gray(img_enc)
         # resizing images to 15X13
-        img_org = skimage.transform.resize(img_org, (64, 64))
-        img_enc = skimage.transform.resize(img_enc, (64, 64))
+        img_org = skimage.transform.resize(img_org, (size, size))
+        img_enc = skimage.transform.resize(img_enc, (size, size))
         # flattening images to vectors in row manner
         img_org = img_org.flatten(order='C')
         img_enc = img_enc.flatten(order='C')
@@ -63,3 +61,38 @@ def load_images_scikit(files, n_elements=None, gray_scale=True):
         # np.array from array
     images = np.asarray(images)
     return images
+
+
+def load_and_transform_images_scikit(files, gray_scale=True, size=64):
+    """
+    Takes file with paths to input images and load then and their names to arrays
+    """
+    images = []
+    for inp, enc in tqdm(files):
+        # loading images
+        img_org = skimage.io.imread(inp)
+        img_enc = skimage.io.imread(enc)
+        # changing to gray_scale
+        if gray_scale:
+            img_org = skimage.color.rgb2gray(img_org)
+            img_enc = skimage.color.rgb2gray(img_enc)
+        # resizing images to 15X13
+        img_org = skimage.transform.resize(img_org, (size, size))
+        img_enc = skimage.transform.resize(img_enc, (size, size))
+        # flattening images to vectors in row manner
+        img_org = img_org.flatten(order='C')
+        img_enc = img_enc.flatten(order='C')
+
+        final_data = np.concatenate((img_org, img_enc))
+
+        # appending file and its name to appropriate arrays
+        # np.array from array
+        images.append(final_data)
+    images = np.asarray(images)
+    dataset = files[0][0].split('/')[1]
+    if gray_scale:
+        gs = '_gray'
+    else:
+        gs = ''
+    file_name = f'transformed_data/{dataset}_{size}{gs}_{len(files)}.csv'
+    np.savetxt(file_name, images)

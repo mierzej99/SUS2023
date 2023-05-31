@@ -27,7 +27,7 @@ def create_list_of_pairs_and_labels(input_list, enc_list, number_of_not_correct_
         pairs[photo_idx * step] = [input_list[photo_idx], enc_list[photo_idx]]
         labels[photo_idx * step] = 1  # pair of photo and its encoding
         enc_without_correct_pair = [x for i, x in enumerate(enc_list) if i != photo_idx]
-        for pair_idx in range(1, number_of_not_correct_pairs + 1):
+        for pair_idx in range(1, step):
             enc = random.choice(enc_without_correct_pair)
             enc_without_correct_pair.remove(enc)
             pairs[photo_idx * step + pair_idx] = [input_list[photo_idx], enc]
